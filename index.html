@@ -543,15 +543,31 @@ function finish(){
   }
   ui.run = null; ui.mode = "result"; render(); window.scrollTo(0,0);
 }
-function speak(text, btn){
-  if(!("speechSynthesis" in window)){ btn.textContent = "Audio non pris en charge par ce navigateur"; return; }
-  var u = new SpeechSynthesisUtterance(text); u.lang = "fr-FR"; u.rate = 0.95;
-  var vs = window.speechSynthesis.getVoices().filter(function(v){ return /^fr/i.test(v.lang); });
-  if(vs.length) u.voice = vs[0];
+var BEST = /(am[eé]lie|thomas|audrey|aur[eé]lie|marie|google fran|paulina|hortense|denise|henri|eloise)/i;
+function pickVoice(){
+  var vs = (window.speechSynthesis.getVoices()||[]).filter(function(v){ return /^fr/i.test(v.lang); });
+  if(!vs.length) return null;
+  var score = function(v){ var n = v.name||""; return (/premium|enhanced|am[eé]lior/i.test(n)?4:0) + (BEST.test(n)?2:0) + (/^fr[-_]FR/i.test(v.lang)?1:0) - (/compact|eloquence|grandpa|grandma|rocko|shelley|flo|reed|sandy/i.test(n)?5:0); };
+  return vs.sort(function(a,b){ return score(b)-score(a); })[0];
+}
+if("speechSynthesis" in window){ try{ window.speechSynthesis.getVoices(); window.speechSynthesis.onvoiceschanged = function(){}; }catch(e){} }
+function speak(it, btn){
+  var done = function(){ btn.textContent = "Écoute terminée"; };
   btn.disabled = true; btn.textContent = "Lecture en cours...";
-  u.onend = function(){ btn.textContent = "Écoute terminée"; };
-  u.onerror = function(){ btn.textContent = "Écoute terminée"; };
-  window.speechSynthesis.cancel(); window.speechSynthesis.speak(u);
+  if(it.f){
+    var au = new Audio(it.f); au.onended = done; au.onerror = function(){ btn.textContent = "Audio indisponible"; };
+    au.play().catch(function(){ btn.textContent = "Audio indisponible"; }); return;
+  }
+  if(!("speechSynthesis" in window)){ btn.textContent = "Audio non pris en charge par ce navigateur"; return; }
+  var ss = window.speechSynthesis;
+  var parts = it.a.match(/[^.!?]+[.!?]*/g) || [it.a], i = 0, v = pickVoice();
+  var next = function(){
+    if(i >= parts.length){ done(); return; }
+    var u = new SpeechSynthesisUtterance(parts[i++].trim()); u.lang = "fr-FR"; u.rate = 0.85; u.pitch = 1; if(v) u.voice = v;
+    u.onend = function(){ setTimeout(next, 350); }; u.onerror = done;
+    ss.speak(u);
+  };
+  if(ss.speaking || ss.pending){ ss.cancel(); setTimeout(next, 250); } else next();
 }
 
 /* ---------- administration ---------- */
@@ -606,7 +622,7 @@ document.addEventListener("click", function(e){
   else if(act==="prev" && ui.run){ ui.run.cur = Math.max(0, ui.run.cur-1); render(); window.scrollTo(0,0); }
   else if(act==="goto" && ui.run){ ui.run.cur = +a.getAttribute("data-i"); render(); window.scrollTo(0,0); }
   else if(act==="back"){ ui.mode = "list"; ui.last = null; render(); window.scrollTo(0,0); }
-  else if(act==="play" && ui.run){ var it = ui.run.sim.items[+a.getAttribute("data-i")]; ui.run.played[it.a] = true; speak(it.a, a); }
+  else if(act==="play" && ui.run){ var it = ui.run.sim.items[+a.getAttribute("data-i")]; ui.run.played[it.a] = true; speak(it, a); }
   else if(act==="logout"){ if(USE_FB){ auth.signOut(); } else { user = null; lsSet("cf_user", ""); render(); } }
   else if(act==="toggle-paid"){ user.paid = !user.paid; lsSet("cf_user", JSON.stringify(user)); render(); }
   else if(act==="scroll-offre"){ var o = document.getElementById("offre"); if(o) o.scrollIntoView({behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth"}); }
