@@ -482,7 +482,7 @@ function viewAdmin(){
     + '</section>'
     + '<section class="block"><h2>Simulations complètes</h2>'
     + (sims ? '<div class="tablewrap" style="margin-bottom:16px"><table><thead><tr><th>Titre</th><th>Épreuve</th><th>Questions</th><th></th></tr></thead><tbody>'+sims+'</tbody></table></div>' : '<p class="muted" style="margin-bottom:14px">Aucune simulation complète enregistrée.</p>')
-    + '<div class="panel"><label for="simJson">Ajouter une simulation (collez le texte JSON)<textarea id="simJson" spellcheck="false" placeholder=\'{"epreuve":"structures","titre":"...","duree":10,"items":[{"q":"...","o":["a","b","c","d"],"b":0,"e":"..."}]}\'></textarea></label>'
+    + '<div class="panel"><label for="simJson">Ajouter des simulations (collez le texte JSON)<textarea id="simJson" spellcheck="false" placeholder=\'{"epreuve":"structures","titre":"...","duree":10,"items":[{"q":"...","o":["a","b","c","d"],"b":0,"e":"..."}]}\'></textarea></label>'
     + '<button class="btn" type="button" data-act="save-sim">Enregistrer la simulation</button><p class="msg" id="simMsg" role="status"></p>'
     + '<details><summary>Format attendu</summary><p class="note">epreuve : structures, ecrite ou orale. duree : minutes. items : liste de questions avec q (question), o (4 réponses), b (numéro de la bonne réponse, en commençant à 0), e (explication). Facultatif : t (texte à lire) ou a (texte lu à voix haute), ordre (numéro d\'affichage), id.</p></details></div></section>';
 }
@@ -573,14 +573,19 @@ function validSim(o){
 function saveSim(){
   var raw = document.getElementById("simJson").value, o;
   try{ o = JSON.parse(raw); }catch(e){ return setMsg("simMsg", "Ce texte n'est pas du JSON valide. Vérifiez les guillemets et les virgules.", false); }
-  var bad = validSim(o); if(bad) return setMsg("simMsg", bad, false);
-  var id = o.id ? slug(o.id) : slug(o.titre);
-  var doc = {epreuve:o.epreuve, titre:o.titre, duree:o.duree, ordre:(typeof o.ordre==="number" ? o.ordre : Date.now()), items:o.items};
+  var list = Array.isArray(o) ? o : [o], docs = [], i;
+  if(!list.length) return setMsg("simMsg", "La liste est vide.", false);
+  for(i=0;i<list.length;i++){
+    var bad = validSim(list[i]); if(bad) return setMsg("simMsg", (list.length>1 ? "Simulation "+(i+1)+" : " : "")+bad, false);
+    var s = list[i], id = s.id ? slug(s.id) : slug(s.titre);
+    docs.push({id:id, doc:{epreuve:s.epreuve, titre:s.titre, duree:s.duree, ordre:(typeof s.ordre==="number" ? s.ordre : Date.now()+i), items:s.items}});
+  }
   setMsg("simMsg", "Enregistrement…", true);
-  db.collection("sims").doc(id).set(doc).then(function(){
-    var x = doc; x.id = id; x.gratuit = false;
-    premium = premium.filter(function(p){ return p.id !== id; }).concat([x]).sort(byOrdre);
-    render(); setMsg("simMsg", "Simulation enregistrée.", true);
+  var batch = db.batch();
+  docs.forEach(function(d){ batch.set(db.collection("sims").doc(d.id), d.doc); });
+  batch.commit().then(function(){
+    docs.forEach(function(d){ var x = d.doc; x.id = d.id; x.gratuit = false; premium = premium.filter(function(p){ return p.id !== d.id; }).concat([x]); });
+    premium.sort(byOrdre); render(); setMsg("simMsg", docs.length+" simulation(s) enregistrée(s).", true);
   }).catch(function(e){ setMsg("simMsg", errMsg(e), false); });
 }
 
