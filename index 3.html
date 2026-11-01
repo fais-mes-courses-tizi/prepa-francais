@@ -1,0 +1,682 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Prépa Français</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@600;800&family=Hanken+Grotesk:wght@400;500;700&display=swap">
+<style>
+/* Concept : une interface d'examen blanche et bleue, nette, sans décor. Le rouge ne sert que pour les erreurs. */
+:root{
+  --paper:#F4F7FE; --surface:#FFFFFF; --ink:#0F1B3D; --muted:#58648A; --border:#DAE2F5;
+  --accent:#1F4FE0; --accent-fg:#FFFFFF; --accent-soft:#E8EEFE;
+  --red:#D32F45; --red-soft:#FDECEF; --green:#177A4C; --green-soft:#E2F4EB;
+  --font-display:"Manrope",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --font-body:"Hanken Grotesk",system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+@media not all{
+  :root:not([data-theme="light"]){
+    --paper:#0C1330; --surface:#151D45; --ink:#EAEFFD; --muted:#9FABD2; --border:#27326A;
+    --accent:#7F9CFF; --accent-fg:#0B1235; --accent-soft:#1B2A66;
+    --red:#FF7C8E; --red-soft:#3A2034; --green:#55D493; --green-soft:#143A31; color-scheme:dark;
+  }
+}
+:root[data-theme="never"]{
+  --paper:#0C1330; --surface:#151D45; --ink:#EAEFFD; --muted:#9FABD2; --border:#27326A;
+  --accent:#7F9CFF; --accent-fg:#0B1235; --accent-soft:#1B2A66;
+  --red:#FF7C8E; --red-soft:#3A2034; --green:#55D493; --green-soft:#143A31; color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{
+  background-color:var(--paper);
+  color:var(--ink); font-family:var(--font-body); font-size:16px; line-height:1.55;
+  padding-block:0 56px;
+  padding-left:max(16px, env(safe-area-inset-left, 0px));
+  padding-right:max(16px, env(safe-area-inset-right, 0px));
+}
+body::before{content:""; position:fixed; inset:0 0 auto; height:env(safe-area-inset-top, 0px); z-index:10; background:var(--paper)}
+.wrap{max-width:960px; margin-inline:auto}
+h1,h2,h3{font-family:var(--font-display); margin:0; text-wrap:balance; line-height:1.1; letter-spacing:-0.01em}
+p{margin:0}
+button,input{font:inherit; color:inherit}
+:focus-visible{outline:3px solid var(--accent); outline-offset:2px}
+
+.demo{background:var(--accent-soft); color:var(--ink); border:1px solid var(--accent); border-radius:10px; padding:8px 12px; font-size:.86rem; margin-top:14px}
+
+header.top{display:flex; align-items:center; justify-content:space-between; gap:10px 20px; flex-wrap:wrap; padding-block:14px}
+.brand{font-family:var(--font-display); font-weight:800; font-size:1.5rem; display:flex; align-items:baseline; gap:8px; cursor:pointer; background:none; border:0; padding:0; color:var(--ink)}
+.brand i{width:10px; height:10px; background:var(--accent); border-radius:50%; display:inline-block}
+nav{display:flex; gap:4px; flex-wrap:wrap}
+nav button{background:none; border:0; padding:8px 12px; border-radius:8px; font-weight:700; cursor:pointer; color:var(--muted)}
+nav button[aria-current="page"]{color:var(--ink); box-shadow:inset 0 -3px 0 var(--accent)}
+nav button:hover{color:var(--ink)}
+
+.hero{padding-block:34px 24px; display:grid; gap:18px; justify-items:start}
+.badge{display:inline-block; background:var(--surface); border:1px solid var(--border); border-radius:999px; padding:4px 12px; font-size:.82rem; font-weight:700; color:var(--muted); letter-spacing:.02em}
+.hero h1{font-weight:800; font-size:clamp(2.1rem, 7vw, 3.7rem); max-width:16ch}
+.hero h1 u{text-decoration:none; color:var(--accent)}
+.hero p.lead{max-width:56ch; color:var(--muted); font-size:1.08rem}
+.row{display:flex; gap:10px; flex-wrap:wrap}
+.btn{border:0; border-radius:10px; padding:12px 20px; font-weight:700; cursor:pointer; background:var(--accent); color:var(--accent-fg); text-decoration:none; display:inline-block}
+.btn.ghost{background:var(--surface); color:var(--ink); border:2px solid var(--border)}
+.btn[disabled]{opacity:.55; cursor:not-allowed}
+.btn.sm{padding:8px 14px; font-size:.92rem}
+
+section.block{margin-top:34px}
+section.block>h2{font-size:clamp(1.5rem, 4.5vw, 2rem); margin-bottom:14px}
+.steps{display:grid; gap:12px; grid-template-columns:repeat(auto-fit, minmax(210px, 1fr)); counter-reset:s}
+.step{background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:16px; counter-increment:s; min-width:0}
+.step::before{content:counter(s); font-family:var(--font-display); font-weight:800; font-size:1.6rem; color:var(--accent); display:block; line-height:1; margin-bottom:6px}
+.step b{display:block; margin-bottom:2px}
+.step span{color:var(--muted); font-size:.94rem}
+
+.offer{background:var(--surface); border:1px solid var(--border); box-shadow:0 8px 30px rgba(31,79,224,.10); border-radius:18px; padding:clamp(18px, 4vw, 28px); display:grid; gap:20px; grid-template-columns:minmax(0,1fr)}
+@media (min-width:760px){.offer{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}}
+.price{font-family:var(--font-display); font-weight:800; font-size:3rem; line-height:1; font-variant-numeric:tabular-nums}
+.price small{font-family:var(--font-body); font-size:1rem; font-weight:500; color:var(--muted)}
+.ticks{list-style:none; padding:0; margin:14px 0 0; display:grid; gap:8px}
+.ticks li{padding-left:26px; position:relative}
+.ticks li::before{content:"✓"; position:absolute; left:0; color:var(--green); font-weight:800}
+.pay ol{margin:10px 0 0; padding-left:20px; display:grid; gap:8px}
+.pay h3{font-size:1.2rem}
+.muted{color:var(--muted)}
+.note{font-size:.88rem; color:var(--muted)}
+
+.grid{display:grid; gap:12px; grid-template-columns:repeat(auto-fill, minmax(260px, 1fr))}
+.card{background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:16px; display:flex; flex-direction:column; gap:8px; min-width:0}
+.card h3{font-size:1.15rem}
+.chip{align-self:flex-start; font-size:.76rem; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--accent); background:var(--accent-soft); padding:3px 9px; border-radius:6px}
+.chip.lock{color:var(--muted); background:var(--paper); border:1px solid var(--border)}
+.card .meta{color:var(--muted); font-size:.92rem; font-variant-numeric:tabular-nums}
+.card .btn{margin-top:auto; align-self:flex-start}
+
+.runbar{position:sticky; top:env(safe-area-inset-top, 0px); z-index:5; background:var(--paper); border-bottom:2px solid var(--accent); display:flex; justify-content:space-between; align-items:center; gap:12px; padding-block:10px; margin-bottom:16px}
+.runbar h2{font-size:1.15rem}
+.timer{font-family:var(--font-display); font-weight:800; font-size:1.6rem; font-variant-numeric:tabular-nums}
+.timer.low{color:var(--red)}
+.q{background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:16px; margin-bottom:14px; min-width:0}
+.q .num{font-family:var(--font-display); font-weight:800; color:var(--accent); margin-right:6px}
+.q .text{background:var(--accent-soft); border-left:4px solid var(--accent); padding:10px 14px; margin-bottom:12px; border-radius:0 8px 8px 0; overflow-wrap:anywhere}
+.q .stem{font-weight:700; margin-bottom:10px; overflow-wrap:anywhere}
+.opts{display:grid; gap:8px}
+.opt{display:flex; gap:10px; align-items:flex-start; padding:10px 12px; border:1px solid var(--border); border-radius:10px; cursor:pointer; min-width:0; overflow-wrap:anywhere}
+.opt input{margin-top:4px; accent-color:var(--accent)}
+.opt.good{border-color:var(--green); background:var(--green-soft)}
+.opt.bad{border-color:var(--red); background:var(--red-soft); text-decoration:line-through; text-decoration-color:var(--red)}
+.opt.static{cursor:default}
+.expl{margin-top:10px; padding:10px 12px; border-left:4px solid var(--accent); background:var(--accent-soft); border-radius:0 8px 8px 0; font-size:.94rem}
+.audio{margin-bottom:12px}
+.examgrid{display:grid; gap:14px; grid-template-columns:minmax(0,1fr); align-items:start}
+@media (min-width:760px){.examgrid{grid-template-columns:minmax(0,1fr) 230px}}
+.examgrid .q{margin-bottom:0}
+.qnav{background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:14px; display:grid; gap:10px; min-width:0}
+.qgrid{display:grid; grid-template-columns:repeat(auto-fill, minmax(40px, 1fr)); gap:6px}
+.qgrid button{height:40px; border-radius:8px; border:2px solid var(--border); background:var(--paper); font-weight:700; cursor:pointer; font-variant-numeric:tabular-nums}
+.qgrid button.done{background:var(--accent); color:var(--accent-fg); border-color:var(--accent)}
+.qgrid button.cur{box-shadow:0 0 0 3px var(--accent-soft), 0 0 0 5px var(--accent)}
+
+.result{background:var(--surface); border:2px solid var(--accent); border-radius:18px; padding:clamp(18px, 4vw, 28px); display:grid; gap:10px; margin-bottom:20px}
+.big{font-family:var(--font-display); font-weight:800; font-size:clamp(2.2rem, 8vw, 3.4rem); line-height:1; font-variant-numeric:tabular-nums}
+.lvl{display:inline-block; background:var(--green-soft); color:var(--green); font-weight:800; border-radius:8px; padding:3px 10px}
+
+table{border-collapse:collapse; width:100%; font-variant-numeric:tabular-nums}
+.tablewrap{overflow-x:auto; background:var(--surface); border:1px solid var(--border); border-radius:14px}
+th,td{text-align:left; padding:10px 14px; border-bottom:1px solid var(--border); white-space:nowrap}
+th{font-size:.8rem; letter-spacing:.06em; text-transform:uppercase; color:var(--muted)}
+tr:last-child td{border-bottom:0}
+.empty{background:var(--surface); border:1px dashed var(--border); border-radius:14px; padding:24px; text-align:center; display:grid; gap:12px; justify-items:center}
+
+form.acc{background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:18px; display:grid; gap:12px; max-width:460px}
+label{font-weight:700; font-size:.94rem; display:grid; gap:6px}
+input[type=text],input[type=email],input[type=password],textarea{border:2px solid var(--border); background:var(--paper); border-radius:10px; padding:11px 12px; width:100%}
+.status{display:inline-block; font-weight:800; border-radius:8px; padding:3px 10px}
+.status.on{background:var(--green-soft); color:var(--green)}
+.status.off{background:var(--accent-soft); color:var(--accent)}
+.panel{background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:18px; display:grid; gap:12px; max-width:560px}
+
+footer{margin-top:44px; padding-block:18px; border-top:1px solid var(--border); color:var(--muted); font-size:.84rem; max-width:70ch}
+@media (prefers-reduced-motion: no-preference){ .card{transition:transform .15s ease} .card:hover{transform:translateY(-2px)} }
+.msg{font-weight:700; font-size:.92rem; min-height:1em}
+.msg.ok{color:var(--green)} .msg.err{color:#C0392B}
+textarea{min-height:170px; font-family:ui-monospace,Menlo,monospace; font-size:.85rem; resize:vertical}
+details{font-size:.92rem} summary{cursor:pointer; font-weight:700}
+.row{flex-wrap:wrap}
+th,td{padding:10px 10px}
+:root{color-scheme:light}
+</style>
+
+<div class="wrap">
+  <div class="demo" id="demo" role="note">Version de démonstration : les comptes et l'activation de l'accès sont simulés sur cet appareil. La vraie connexion arrive à l'étape suivante.</div>
+  <header class="top">
+    <button class="brand" type="button" data-go="accueil" aria-label="Accueil Prépa Français">Prépa Français <i aria-hidden="true"></i></button>
+    <nav aria-label="Navigation principale" id="nav"></nav>
+  </header>
+  <main id="view"></main>
+  <footer>Entraînement indépendant, inspiré du format du TCF. Ce site n'est pas affilié à France Éducation international, propriétaire de l'examen officiel. Le score et le niveau affichés sont des estimations indicatives.</footer>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script>
+var FB_CONFIG = {
+  apiKey: "AIzaSyCAlM45SFdTKnY1sUXoTZDnw6CWcPRkbA8",
+  authDomain: "prepa-francais.firebaseapp.com",
+  projectId: "prepa-francais",
+  storageBucket: "prepa-francais.firebasestorage.app",
+  messagingSenderId: "300258698861",
+  appId: "1:300258698861:web:e3d49a1dacd8e638548164"
+};
+var CONFIG = {
+  prix: "1000 DA",
+  whatsapp: "213558836811", /* numéro international sans + ni espaces */
+  ccp: "" /* numéro de compte CCP à afficher, ou vide pour l'envoyer sur WhatsApp */
+};
+var EPREUVES = {structures:"Structures de la langue", ecrite:"Compréhension écrite", orale:"Compréhension orale"};
+
+var TXT_BIBLIO = "Bibliothèque municipale. Nouveaux horaires à partir du 2 décembre : ouverte du dimanche au jeudi, de 9 h à 17 h. Fermée le vendredi et le samedi. L'inscription est gratuite pour les moins de 18 ans. Les adultes paient 500 DA par an. Pour emprunter un livre, présentez une pièce d'identité.";
+var TXT_MSG = "Salut Karim, je ne pourrai pas venir samedi à ton anniversaire parce que mon train est annulé. Je t'appelle dimanche pour tout te raconter. J'espère que la fête sera belle ! Bises, Samir";
+var AUD_MED = "Bonjour, ici le centre médical Les Oliviers. Votre rendez-vous avec le docteur Benali est déplacé à jeudi, à quatorze heures trente. Merci de venir dix minutes avant, avec votre carte de santé.";
+var AUD_GARE = "Attention, mesdames et messieurs. Le train à destination d'Alger partira du quai numéro trois, avec quinze minutes de retard. Nous vous prions de nous excuser.";
+
+var FREE = [
+  {id:"s1", epreuve:"structures", titre:"Structures de la langue, essai gratuit", duree:5, gratuit:true, items:[
+    {q:"Hier, nous ___ au marché.", o:["sommes allés","allons","irons","allions"], b:0, e:"« Hier » demande un temps du passé. Le verbe aller se conjugue avec être au passé composé : nous sommes allés."},
+    {q:"Il faut que tu ___ ton travail avant midi.", o:["finis","finisses","finiras","finir"], b:1, e:"« Il faut que » est suivi du subjonctif présent : que tu finisses."},
+    {q:"Je n'ai pas ___ temps aujourd'hui.", o:["du","le","de","des"], b:2, e:"Après une négation, l'article partitif devient « de » : je n'ai pas de temps."},
+    {q:"La voiture ___ il parle est neuve.", o:["que","qui","où","dont"], b:3, e:"On dit « parler de quelque chose », donc le pronom relatif est « dont »."},
+    {q:"Si j'avais plus d'argent, je ___ un appartement.", o:["achèterai","achèterais","achetais","achète"], b:1, e:"Après « si » + imparfait, on utilise le conditionnel présent : j'achèterais."},
+    {q:"Ces fleurs, je les ai ___ hier.", o:["acheté","achetés","achetées","acheter"], b:2, e:"Avec avoir, le participe passé s'accorde avec le complément direct placé avant le verbe. « Les » remplace « ces fleurs » (féminin pluriel) : achetées."}
+  ]},
+  {id:"e1", epreuve:"ecrite", titre:"Compréhension écrite, essai gratuit", duree:8, gratuit:true, items:[
+    {t:TXT_BIBLIO, q:"Quel jour la bibliothèque est-elle fermée ?", o:["Le dimanche","Le jeudi","Le vendredi","Le mardi"], b:2, e:"Le texte dit : « Fermée le vendredi et le samedi »."},
+    {t:TXT_BIBLIO, q:"Combien paie un adulte pour s'inscrire ?", o:["Rien","500 DA par an","500 DA par mois","1000 DA par an"], b:1, e:"« Les adultes paient 500 DA par an »."},
+    {t:TXT_BIBLIO, q:"Que faut-il présenter pour emprunter un livre ?", o:["Une lettre","Un certificat de travail","Une pièce d'identité","Un abonnement mensuel"], b:2, e:"« Pour emprunter un livre, présentez une pièce d'identité »."},
+    {t:TXT_MSG, q:"Pourquoi Samir ne vient-il pas ?", o:["Il est malade","Son train est annulé","Il travaille","Il a oublié"], b:1, e:"Samir écrit : « mon train est annulé »."},
+    {t:TXT_MSG, q:"Quand Samir va-t-il téléphoner à Karim ?", o:["Samedi","Dimanche","Lundi","Ce soir"], b:1, e:"« Je t'appelle dimanche »."}
+  ]},
+  {id:"o1", epreuve:"orale", titre:"Compréhension orale, essai gratuit", duree:6, gratuit:true, items:[
+    {a:AUD_MED, q:"Quel jour est le nouveau rendez-vous ?", o:["Mercredi","Jeudi","Vendredi","Mardi"], b:1, e:"L'enregistrement dit : « déplacé à jeudi »."},
+    {a:AUD_MED, q:"À quelle heure est le rendez-vous ?", o:["13 h 30","14 h","14 h 30","15 h 30"], b:2, e:"« À quatorze heures trente », donc 14 h 30."},
+    {a:AUD_GARE, q:"De quel quai part le train ?", o:["Le quai 1","Le quai 2","Le quai 3","Le quai 4"], b:2, e:"« Du quai numéro trois »."},
+    {a:AUD_GARE, q:"Combien de minutes de retard a le train ?", o:["5 minutes","15 minutes","30 minutes","50 minutes"], b:1, e:"« Avec quinze minutes de retard »."}
+  ]}
+];
+var DEMO_PREMIUM = [
+  {id:"s2", epreuve:"structures", titre:"Structures de la langue, simulation complète n°2", duree:6, gratuit:false, items:[
+    {q:"Elle est partie ___ avoir dit au revoir.", o:["sans","pour","avec","dans"], b:0, e:"« Sans » + infinitif exprime l'absence d'une action : sans avoir dit au revoir."},
+    {q:"Je pense ___ vacances.", o:["des","aux","les","par"], b:1, e:"On dit « penser à quelque chose ». À + les devient « aux » : je pense aux vacances."},
+    {q:"Quand il ___ petit, il habitait à Tizi Ouzou.", o:["a été","sera","était","serait"], b:2, e:"Pour décrire une situation habituelle dans le passé, on utilise l'imparfait : il était."},
+    {q:"Elle m'a dit qu'elle ___ le lendemain.", o:["vient","viendrait","viendra","est venue"], b:1, e:"Après un verbe au passé, le futur du discours rapporté devient un conditionnel : elle viendrait."},
+    {q:"C'est la ville ___ je suis né.", o:["que","dont","où","qui"], b:2, e:"Pour un lieu, on utilise le pronom relatif « où »."},
+    {q:"Il est plus grand ___ son frère.", o:["de","à","comme","que"], b:3, e:"Le comparatif se construit avec « plus ... que »."}
+  ]}
+];
+
+/* ---------- stockage local (essais anonymes et mode démonstration) ---------- */
+var mem = {};
+function lsGet(k){ try{ var v = localStorage.getItem(k); return v===null ? (mem[k]||null) : v; }catch(e){ return mem[k]||null; } }
+function lsSet(k,v){ mem[k]=v; try{ localStorage.setItem(k,v); }catch(e){} }
+function jget(k, d){ try{ var v = lsGet(k); return v ? JSON.parse(v) : d; }catch(e){ return d; } }
+function esc(s){ return String(s).replace(/[&<>"']/g, function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]; }); }
+
+/* ---------- Firebase (comptes réels) ou démonstration locale ---------- */
+var USE_FB = !!(window.firebase && FB_CONFIG.apiKey);
+var auth = null, db = null;
+if(USE_FB){ try{ firebase.initializeApp(FB_CONFIG); auth = firebase.auth(); db = firebase.firestore(); }catch(e){ USE_FB = false; } }
+var demoEl = document.getElementById("demo"); if(USE_FB && demoEl){ demoEl.hidden = true; }
+
+var user = USE_FB ? null : jget("cf_user", null);
+var ready = !USE_FB;
+var results = jget("cf_res", []);
+var premium = USE_FB ? [] : DEMO_PREMIUM;
+var isAdmin = false, adminUsers = null, adminLoading = false, adminMsg = "", delConfirm = "";
+var authMode = "signup", pendingPrenom = "";
+var ui = {mode:"list", run:null, last:null, timer:null};
+var ROUTES = ["accueil","simulations","resultats","compte","admin"];
+var LABELS = {accueil:"Accueil", simulations:"Simulations", resultats:"Résultats", compte:"Compte", admin:"Admin"};
+
+function errMsg(e){
+  var c = (e && e.code) || "";
+  var m = {
+    "auth/email-already-in-use":"Cette adresse e-mail a déjà un compte. Connectez-vous.",
+    "auth/invalid-email":"Adresse e-mail invalide.",
+    "auth/weak-password":"Mot de passe trop court : 6 caractères minimum.",
+    "auth/invalid-credential":"E-mail ou mot de passe incorrect.",
+    "auth/wrong-password":"E-mail ou mot de passe incorrect.",
+    "auth/user-not-found":"E-mail ou mot de passe incorrect.",
+    "auth/too-many-requests":"Trop d'essais. Réessayez dans quelques minutes.",
+    "auth/network-request-failed":"Pas de connexion internet.",
+    "permission-denied":"Accès refusé aux données. Les règles de sécurité ne sont peut-être pas encore publiées."
+  };
+  return m[c] || ("Erreur : " + (c || (e && e.message) || "inconnue"));
+}
+function setMsg(id, text, ok){ var el = document.getElementById(id); if(!el) return; el.textContent = text; el.className = "msg " + (ok ? "ok" : "err"); }
+
+function allSims(){ return FREE.concat(premium); }
+function hasAccess(){ return !!((user && user.paid) || isAdmin); }
+function byOrdre(a,b){ return (a.ordre||0) - (b.ordre||0); }
+
+if(USE_FB){
+  auth.onAuthStateChanged(function(u){
+    if(!u){ user = null; premium = []; isAdmin = false; adminUsers = null; results = jget("cf_res", []); ready = true; render(); return; }
+    loadProfile(u);
+  });
+}
+function loadProfile(u){
+  var ref = db.collection("users").doc(u.uid);
+  ref.get().then(function(snap){
+    if(snap.exists) return snap.data();
+    var data = {prenom:(pendingPrenom || (u.email||"").split("@")[0] || "Élève"), email:u.email, paid:false, createdAt:Date.now()};
+    return ref.set(data).then(function(){ return data; });
+  }).then(function(d){
+    user = {uid:u.uid, prenom:d.prenom, email:u.email, paid:!!d.paid, verified:u.emailVerified};
+    ready = true; render();
+    probeAdmin();
+    if(user.paid) loadPremium();
+    loadResults();
+  }).catch(function(e){
+    user = {uid:u.uid, prenom:(u.email||"").split("@")[0], email:u.email, paid:false, verified:u.emailVerified, error:errMsg(e)};
+    ready = true; render();
+  });
+}
+function probeAdmin(){
+  db.collection("adminProbe").doc("x").get().then(function(){ isAdmin = true; loadPremium(); render(); }).catch(function(){ isAdmin = false; });
+}
+function loadPremium(){
+  db.collection("sims").get().then(function(qs){
+    premium = qs.docs.map(function(d){ var x = d.data(); x.id = d.id; x.gratuit = false; return x; }).sort(byOrdre);
+    render();
+  }).catch(function(){ premium = []; });
+}
+function loadResults(){
+  db.collection("results").where("uid","==",user.uid).get().then(function(qs){
+    results = qs.docs.map(function(d){ return d.data(); }).sort(function(a,b){ return (a.ts||0)-(b.ts||0); });
+    render();
+  }).catch(function(){});
+}
+function fetchAdminUsers(){
+  db.collection("users").get().then(function(qs){
+    adminUsers = qs.docs.map(function(d){ var x = d.data(); x.uid = d.id; return x; }).sort(function(a,b){ return (b.createdAt||0)-(a.createdAt||0); });
+    adminLoading = false; render();
+  }).catch(function(e){ adminMsg = errMsg(e); adminUsers = []; adminLoading = false; render(); });
+}
+
+/* ---------- utilitaires ---------- */
+function route(){ var h = (location.hash||"").replace("#",""); return ROUTES.indexOf(h) >= 0 ? h : "accueil"; }
+function go(r){ if(location.hash === "#"+r){ render(); } else { location.hash = r; } }
+function stopTimer(){ if(ui.timer){ clearInterval(ui.timer); ui.timer = null; } }
+function levelOf(score){
+  if(score >= 600) return "C2"; if(score >= 500) return "C1"; if(score >= 400) return "B2";
+  if(score >= 300) return "B1"; if(score >= 200) return "A2"; if(score >= 100) return "A1"; return "Sous A1";
+}
+function waLink(msg){ return CONFIG.whatsapp ? "https://wa.me/"+CONFIG.whatsapp+"?text="+encodeURIComponent(msg) : ""; }
+function fmt(sec){ var m = Math.floor(sec/60), s = sec%60; return (m<10?"0":"")+m+":"+(s<10?"0":"")+s; }
+function slug(s){ return String(s).toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"").slice(0,60) || ("sim-"+Date.now()); }
+
+function renderNav(){
+  var r = route();
+  var list = ROUTES.filter(function(k){ return k !== "admin" || isAdmin; });
+  document.getElementById("nav").innerHTML = list.map(function(k){
+    var label = k==="compte" && user ? esc(user.prenom) : LABELS[k];
+    return '<button type="button" data-go="'+k+'"'+(r===k?' aria-current="page"':'')+'>'+label+'</button>';
+  }).join("");
+}
+
+/* ---------- vues ---------- */
+function viewAccueil(){
+  var wa = waLink("Bonjour, je voudrais activer mon accès complet à Prépa Français.");
+  return '<section class="hero">'
+    + '<span class="badge">Entraînement indépendant, inspiré du format du TCF</span>'
+    + '<h1>Entraînez-vous comme le <u>jour de l\'examen</u>.</h1>'
+    + '<p class="lead">Des simulations chronométrées de compréhension orale, de compréhension écrite et de structures de la langue. Chaque question est corrigée et expliquée.</p>'
+    + '<div class="row"><button class="btn" type="button" data-go="simulations">Essayer une simulation gratuite</button><button class="btn ghost" type="button" data-act="scroll-offre">Voir l\'offre</button></div></section>'
+    + '<section class="block"><h2>Comment ça marche</h2><div class="steps">'
+    + '<div class="step"><b>Choisissez une épreuve</b><span>Orale, écrite ou structures de la langue.</span></div>'
+    + '<div class="step"><b>Répondez avant la fin</b><span>Un chronomètre tourne, comme à l\'examen. L\'audio ne s\'écoute qu\'une fois.</span></div>'
+    + '<div class="step"><b>Lisez la correction</b><span>Votre score estimé, puis une explication pour chaque question.</span></div></div></section>'
+    + '<section class="block" id="offre"><h2>Accès complet</h2><div class="offer">'
+    + '<div><div class="price">'+CONFIG.prix+' <small>paiement unique</small></div>'
+    + '<ul class="ticks"><li>Toutes les simulations complètes</li><li>Correction détaillée, question par question</li><li>Score estimé sur 699 et niveau CECRL</li><li>Historique de vos résultats</li></ul></div>'
+    + '<div class="pay"><h3>Comment payer</h3><ol><li>Créez votre compte.</li><li>Payez '+CONFIG.prix+' par CCP. '+(CONFIG.ccp ? 'Compte CCP : <b>'+esc(CONFIG.ccp)+'</b>.' : 'Les coordonnées vous sont données sur WhatsApp.')+'</li><li>Envoyez la preuve de paiement.</li><li>Votre accès est activé.</li></ol>'
+    + '<div class="row" style="margin-top:12px">'
+    + (user ? '' : '<button class="btn" type="button" data-go="compte">Créer mon compte</button>')
+    + (wa ? '<a class="btn ghost" href="'+wa+'" target="_blank" rel="noopener">Écrire sur WhatsApp</a>' : '<span class="note">Le contact WhatsApp sera affiché ici.</span>')
+    + '</div></div></div></section>';
+}
+
+function simCard(s){
+  var locked = !s.gratuit && !hasAccess();
+  return '<article class="card"><span class="chip'+(locked?' lock':'')+'">'+(locked?'Accès complet':EPREUVES[s.epreuve])+'</span>'
+    + '<h3>'+esc(s.titre)+'</h3><p class="meta">'+EPREUVES[s.epreuve]+' · '+s.items.length+' questions · '+s.duree+' min</p>'
+    + '<button class="btn sm" type="button" data-act="start" data-id="'+esc(s.id)+'">'+(locked?'Débloquer':'Commencer')+'</button></article>';
+}
+function viewList(){
+  var html = '<section class="block"><h2>Simulations gratuites</h2><div class="grid">'+FREE.map(simCard).join("")+'</div></section>';
+  html += '<section class="block"><h2>Simulations complètes</h2>';
+  if(hasAccess()){
+    html += premium.length ? '<div class="grid">'+premium.map(simCard).join("")+'</div>' : '<div class="empty"><p>De nouvelles simulations complètes arrivent bientôt.</p></div>';
+  } else {
+    html += '<div class="grid"><article class="card"><span class="chip lock">Accès complet</span><h3>Toutes les simulations complètes</h3><p class="meta">Débloquez-les avec l\'accès à '+CONFIG.prix+', paiement unique.</p><button class="btn sm" type="button" data-act="unlock">Débloquer</button></article></div>';
+  }
+  return html + '</section>';
+}
+
+function viewRun(){
+  var r = ui.run, s = r.sim, i = r.cur, it = s.items[i], total = s.items.length, html = "";
+  html += '<div class="runbar"><div><h2>'+esc(s.titre)+'</h2><span class="note">'+EPREUVES[s.epreuve]+'</span></div><div class="timer" id="timer" aria-live="off">'+fmt(r.left)+'</div></div>';
+  html += '<div class="examgrid"><div class="q"><p class="note" style="margin-bottom:10px">Question '+(i+1)+' sur '+total+'</p>';
+  if(it.t){ html += '<div class="text">'+esc(it.t)+'</div>'; }
+  if(it.a){
+    var done = r.played[it.a];
+    html += '<div class="audio"><button class="btn sm ghost" type="button" data-act="play" data-i="'+i+'"'+(done?' disabled':'')+'>'+(done?'Écoute terminée':'▶ Écouter (une seule fois)')+'</button></div>';
+  }
+  html += '<p class="stem">'+esc(it.q)+'</p><div class="opts">';
+  it.o.forEach(function(opt, j){
+    html += '<label class="opt"><input type="radio" name="q'+i+'" value="'+j+'"'+(r.ans[i]===j?' checked':'')+'><span>'+esc(opt)+'</span></label>';
+  });
+  html += '</div><div class="row" style="margin-top:16px;justify-content:space-between">'
+    + '<button class="btn ghost sm" type="button" data-act="prev"'+(i===0?' disabled':'')+'>Précédente</button>'
+    + (i < total-1 ? '<button class="btn sm" type="button" data-act="next">Suivante</button>' : '<button class="btn sm" type="button" data-act="finish">Terminer</button>')
+    + '</div></div>';
+  html += '<aside class="qnav"><p class="note">Vos réponses</p><div class="qgrid">';
+  s.items.forEach(function(_, k){
+    html += '<button type="button" data-act="goto" data-i="'+k+'" class="'+(r.ans[k]!==undefined?'done ':'')+(k===i?'cur':'')+'" aria-label="Question '+(k+1)+'">'+(k+1)+'</button>';
+  });
+  html += '</div><button class="btn sm ghost" type="button" data-act="finish">Terminer et corriger</button></aside></div>';
+  return html;
+}
+
+function viewResult(){
+  var L = ui.last, s = L.sim, html = '';
+  html += '<div class="result"><span class="note">'+esc(s.titre)+'</span><div class="big">'+L.bonnes+' / '+L.total+'</div>'
+    + '<p>Score estimé : <b>'+L.score+' / 699</b> <span class="lvl">'+L.niveau+'</span></p>'
+    + '<p class="note">Estimation indicative, calculée à partir de votre pourcentage de bonnes réponses.</p>'
+    + '<div class="row" style="margin-top:6px"><button class="btn" type="button" data-act="back">Autres simulations</button><button class="btn ghost" type="button" data-go="resultats">Mes résultats</button></div></div>';
+  html += '<h2 style="margin-bottom:14px">Correction</h2>';
+  var prevT = null;
+  s.items.forEach(function(it, i){
+    var mine = L.ans[i];
+    html += '<div class="q">';
+    if(it.t && it.t !== prevT){ html += '<div class="text">'+esc(it.t)+'</div>'; }
+    if(it.a){ html += '<p class="note" style="margin-bottom:8px">Transcription : '+esc(it.a)+'</p>'; }
+    prevT = it.t || prevT;
+    html += '<p class="stem"><span class="num">'+(i+1)+'.</span>'+esc(it.q)+'</p><div class="opts">';
+    it.o.forEach(function(opt, j){
+      var cls = j===it.b ? " good" : (j===mine ? " bad" : "");
+      var tag = j===it.b ? " ✓" : (j===mine ? " (votre réponse)" : "");
+      html += '<div class="opt static'+cls+'"><span>'+esc(opt)+tag+'</span></div>';
+    });
+    html += '</div>';
+    if(mine === undefined){ html += '<p class="note" style="margin-top:8px">Pas de réponse.</p>'; }
+    html += '<div class="expl">'+esc(it.e)+'</div></div>';
+  });
+  return html;
+}
+
+function viewResultats(){
+  if(USE_FB && !ready) return '<section class="block"><h2>Mes résultats</h2><p class="muted">Chargement…</p></section>';
+  if(!results.length){
+    return '<section class="block"><h2>Mes résultats</h2><div class="empty"><p>Vous n\'avez pas encore fait de simulation. Votre score estimé et votre niveau apparaîtront ici.</p><button class="btn" type="button" data-go="simulations">Faire une simulation</button></div></section>';
+  }
+  var rows = results.slice().reverse().map(function(r){
+    return '<tr><td>'+esc(r.date)+'</td><td>'+esc(r.titre)+'</td><td>'+r.bonnes+' / '+r.total+'</td><td>'+r.score+' / 699</td><td><span class="lvl">'+r.niveau+'</span></td></tr>';
+  }).join("");
+  return '<section class="block"><h2>Mes résultats</h2><div class="tablewrap"><table><thead><tr><th>Date</th><th>Simulation</th><th>Réponses</th><th>Score estimé</th><th>Niveau</th></tr></thead><tbody>'+rows+'</tbody></table></div></section>';
+}
+
+function viewCompte(){
+  if(!ready) return '<section class="block"><h2>Compte</h2><p class="muted">Chargement…</p></section>';
+  if(!user){
+    if(!USE_FB){
+      return '<section class="block"><h2>Créer mon compte</h2><form class="acc" id="loginForm">'
+        + '<label for="prenom">Prénom<input id="prenom" type="text" autocomplete="given-name" required></label>'
+        + '<label for="email">Adresse e-mail<input id="email" type="email" autocomplete="email" required></label>'
+        + '<button class="btn" type="submit">Continuer</button>'
+        + '<p class="note">Démonstration : rien n\'est envoyé, le compte reste sur cet appareil.</p></form></section>';
+    }
+    var su = authMode === "signup";
+    return '<section class="block"><h2>'+(su?'Créer mon compte':'Se connecter')+'</h2><form class="acc" id="authForm">'
+      + (su ? '<label for="prenom">Prénom<input id="prenom" type="text" autocomplete="given-name" required></label>' : '')
+      + '<label for="email">Adresse e-mail<input id="email" type="email" autocomplete="email" required></label>'
+      + '<label for="mdp">Mot de passe<input id="mdp" type="password" autocomplete="'+(su?'new-password':'current-password')+'" minlength="6" required></label>'
+      + '<button class="btn" type="submit" id="authBtn">'+(su?'Créer mon compte':'Me connecter')+'</button>'
+      + '<p class="msg" id="authMsg" role="status"></p>'
+      + '<div class="row"><button class="btn ghost sm" type="button" data-act="switch-auth">'+(su?'J\'ai déjà un compte':'Créer un compte')+'</button>'
+      + (su ? '' : '<button class="btn ghost sm" type="button" data-act="reset-pw">Mot de passe oublié</button>')
+      + '</div></form></section>';
+  }
+  var wa = waLink("Bonjour, je suis "+user.prenom+" ("+user.email+"). Voici ma preuve de paiement pour l'accès complet à Prépa Français.");
+  var access = user.paid || isAdmin;
+  return '<section class="block"><h2>Bonjour '+esc(user.prenom)+'</h2><div class="panel">'
+    + '<p class="muted">'+esc(user.email)+'</p>'
+    + '<p>Statut : '+(access ? '<span class="status on">Accès complet actif</span>' : '<span class="status off">Accès gratuit</span>')+'</p>'
+    + (user.error ? '<p class="msg err">'+esc(user.error)+'</p>' : '')
+    + (USE_FB && !user.verified ? '<p class="note">Adresse e-mail non vérifiée. Ouvrez le lien reçu par e-mail, puis touchez « J\'ai vérifié ».</p><div class="row"><button class="btn ghost sm" type="button" data-act="resend">Renvoyer l\'e-mail</button><button class="btn ghost sm" type="button" data-act="checkmail">J\'ai vérifié</button></div><p class="msg" id="mailMsg" role="status"></p>' : '')
+    + (access ? '' : '<p>Pour débloquer les simulations complètes, payez '+CONFIG.prix+' par CCP puis envoyez la preuve de paiement.</p>'
+        + (wa ? '<a class="btn" href="'+wa+'" target="_blank" rel="noopener">Envoyer la preuve sur WhatsApp</a>' : '<p class="note">Le contact WhatsApp sera affiché ici.</p>'))
+    + (isAdmin ? '<div class="row"><button class="btn sm" type="button" data-go="admin">Espace administrateur</button></div>' : '')
+    + '<div class="row"><button class="btn ghost sm" type="button" data-act="logout">Se déconnecter</button></div>'
+    + (!USE_FB ? '<hr style="border:0;border-top:1px dashed var(--border);width:100%"><p class="note">Test de démonstration : <button class="btn ghost sm" type="button" data-act="toggle-paid">'+(user.paid?'Retirer':'Simuler')+' l\'accès complet</button></p>' : '')
+    + '</div></section>';
+}
+
+function viewAdmin(){
+  if(!ready) return '<section class="block"><h2>Administration</h2><p class="muted">Chargement…</p></section>';
+  if(!isAdmin) return '<section class="block"><h2>Administration</h2><div class="empty"><p>Cette page est réservée à l\'administrateur.</p></div></section>';
+  var rows = (adminUsers||[]).map(function(u){
+    return '<tr data-find="'+esc((u.prenom+" "+u.email).toLowerCase())+'"><td>'+esc(u.prenom||"")+'</td><td>'+esc(u.email||"")+'</td><td>'+(u.paid?'<span class="status on">Payé</span>':'<span class="status off">Gratuit</span>')+'</td>'
+      + '<td><button class="btn sm '+(u.paid?'ghost':'')+'" type="button" data-act="toggle-user" data-uid="'+esc(u.uid)+'" data-paid="'+(u.paid?1:0)+'">'+(u.paid?'Retirer l\'accès':'Activer l\'accès')+'</button></td></tr>';
+  }).join("");
+  var sims = premium.map(function(s){
+    var c = delConfirm === s.id;
+    return '<tr><td>'+esc(s.titre)+'</td><td>'+EPREUVES[s.epreuve]+'</td><td>'+s.items.length+'</td><td><button class="btn sm ghost" type="button" data-act="del-sim" data-id="'+esc(s.id)+'">'+(c?'Confirmer la suppression':'Supprimer')+'</button></td></tr>';
+  }).join("");
+  return '<section class="block"><h2>Élèves</h2>'
+    + (adminMsg ? '<p class="msg err">'+esc(adminMsg)+'</p>' : '')
+    + '<div class="row" style="margin-bottom:12px"><input id="filter" type="text" placeholder="Rechercher un prénom ou un e-mail" aria-label="Rechercher un élève" style="max-width:340px"><button class="btn ghost sm" type="button" data-act="refresh-users">Actualiser</button></div>'
+    + (adminUsers===null ? '<p class="muted">Chargement…</p>' : (rows ? '<div class="tablewrap"><table><thead><tr><th>Prénom</th><th>E-mail</th><th>Statut</th><th></th></tr></thead><tbody id="userRows">'+rows+'</tbody></table></div>' : '<div class="empty"><p>Aucun élève inscrit pour le moment.</p></div>'))
+    + '</section>'
+    + '<section class="block"><h2>Simulations complètes</h2>'
+    + (sims ? '<div class="tablewrap" style="margin-bottom:16px"><table><thead><tr><th>Titre</th><th>Épreuve</th><th>Questions</th><th></th></tr></thead><tbody>'+sims+'</tbody></table></div>' : '<p class="muted" style="margin-bottom:14px">Aucune simulation complète enregistrée.</p>')
+    + '<div class="panel"><label for="simJson">Ajouter une simulation (collez le texte JSON)<textarea id="simJson" spellcheck="false" placeholder=\'{"epreuve":"structures","titre":"...","duree":10,"items":[{"q":"...","o":["a","b","c","d"],"b":0,"e":"..."}]}\'></textarea></label>'
+    + '<button class="btn" type="button" data-act="save-sim">Enregistrer la simulation</button><p class="msg" id="simMsg" role="status"></p>'
+    + '<details><summary>Format attendu</summary><p class="note">epreuve : structures, ecrite ou orale. duree : minutes. items : liste de questions avec q (question), o (4 réponses), b (numéro de la bonne réponse, en commençant à 0), e (explication). Facultatif : t (texte à lire) ou a (texte lu à voix haute), ordre (numéro d\'affichage), id.</p></details></div></section>';
+}
+
+function render(){
+  var r = route();
+  if(r !== "simulations"){ stopTimer(); ui.mode = "list"; ui.run = null; }
+  renderNav();
+  var v = document.getElementById("view"), html;
+  if(r==="accueil") html = viewAccueil();
+  else if(r==="resultats") html = viewResultats();
+  else if(r==="compte") html = viewCompte();
+  else if(r==="admin"){
+    if(USE_FB && isAdmin && adminUsers===null && !adminLoading){ adminLoading = true; fetchAdminUsers(); }
+    html = viewAdmin();
+  }
+  else html = ui.mode==="run" ? viewRun() : ui.mode==="result" ? viewResult() : viewList();
+  v.innerHTML = html;
+  document.body.classList.toggle("exam", ui.mode==="run" && r==="simulations");
+  if(ui.mode==="run" && r==="simulations") startTick();
+}
+
+/* ---------- simulation ---------- */
+function startTick(){
+  stopTimer();
+  ui.timer = setInterval(function(){
+    if(!ui.run) return stopTimer();
+    ui.run.left--;
+    var t = document.getElementById("timer");
+    if(t){ t.textContent = fmt(Math.max(0, ui.run.left)); t.classList.toggle("low", ui.run.left <= 60); }
+    if(ui.run.left <= 0){ finish(); }
+  }, 1000);
+}
+function unlockFlow(){
+  go(user ? "accueil" : "compte");
+  if(user){ setTimeout(function(){ var o = document.getElementById("offre"); if(o) o.scrollIntoView(); }, 50); }
+}
+function startSim(id){
+  var s = allSims().filter(function(x){return x.id===id;})[0];
+  if(!s) return;
+  if(!s.gratuit && !hasAccess()){ unlockFlow(); return; }
+  ui.run = {sim:s, left:s.duree*60, ans:{}, played:{}, cur:0};
+  ui.mode = "run"; render(); window.scrollTo(0,0);
+}
+function finish(){
+  var r = ui.run; if(!r) return;
+  stopTimer();
+  var bonnes = 0; r.sim.items.forEach(function(it,i){ if(r.ans[i] === it.b) bonnes++; });
+  var total = r.sim.items.length, score = Math.round(bonnes/total*699), niveau = levelOf(score);
+  ui.last = {sim:r.sim, ans:r.ans, bonnes:bonnes, total:total, score:score, niveau:niveau};
+  var rec = {date:new Date().toLocaleDateString("fr-FR"), titre:r.sim.titre, bonnes:bonnes, total:total, score:score, niveau:niveau, ts:Date.now()};
+  results.push(rec);
+  if(USE_FB && user && user.uid){
+    rec.uid = user.uid;
+    db.collection("results").add(rec).catch(function(){});
+  } else {
+    lsSet("cf_res", JSON.stringify(results));
+  }
+  ui.run = null; ui.mode = "result"; render(); window.scrollTo(0,0);
+}
+function speak(text, btn){
+  if(!("speechSynthesis" in window)){ btn.textContent = "Audio non pris en charge par ce navigateur"; return; }
+  var u = new SpeechSynthesisUtterance(text); u.lang = "fr-FR"; u.rate = 0.95;
+  var vs = window.speechSynthesis.getVoices().filter(function(v){ return /^fr/i.test(v.lang); });
+  if(vs.length) u.voice = vs[0];
+  btn.disabled = true; btn.textContent = "Lecture en cours...";
+  u.onend = function(){ btn.textContent = "Écoute terminée"; };
+  u.onerror = function(){ btn.textContent = "Écoute terminée"; };
+  window.speechSynthesis.cancel(); window.speechSynthesis.speak(u);
+}
+
+/* ---------- administration ---------- */
+function validSim(o){
+  if(!o || typeof o !== "object" || Array.isArray(o)) return "Le texte doit être un objet JSON entre accolades.";
+  if(!EPREUVES[o.epreuve]) return "« epreuve » doit valoir structures, ecrite ou orale.";
+  if(!o.titre || typeof o.titre !== "string") return "« titre » est manquant.";
+  if(!(o.duree > 0)) return "« duree » (en minutes) est manquante.";
+  if(!Array.isArray(o.items) || !o.items.length) return "« items » est manquant.";
+  for(var i=0;i<o.items.length;i++){
+    var it = o.items[i], n = i+1;
+    if(!it || typeof it.q !== "string" || !it.q) return "Question "+n+" : « q » est manquant.";
+    if(!Array.isArray(it.o) || it.o.length < 2) return "Question "+n+" : « o » doit contenir au moins 2 réponses.";
+    if(!(Number.isInteger(it.b) && it.b >= 0 && it.b < it.o.length)) return "Question "+n+" : « b » doit être le numéro de la bonne réponse (0 pour la première).";
+    if(typeof it.e !== "string" || !it.e) return "Question "+n+" : « e » (explication) est manquante.";
+  }
+  return "";
+}
+function saveSim(){
+  var raw = document.getElementById("simJson").value, o;
+  try{ o = JSON.parse(raw); }catch(e){ return setMsg("simMsg", "Ce texte n'est pas du JSON valide. Vérifiez les guillemets et les virgules.", false); }
+  var bad = validSim(o); if(bad) return setMsg("simMsg", bad, false);
+  var id = o.id ? slug(o.id) : slug(o.titre);
+  var doc = {epreuve:o.epreuve, titre:o.titre, duree:o.duree, ordre:(typeof o.ordre==="number" ? o.ordre : Date.now()), items:o.items};
+  setMsg("simMsg", "Enregistrement…", true);
+  db.collection("sims").doc(id).set(doc).then(function(){
+    var x = doc; x.id = id; x.gratuit = false;
+    premium = premium.filter(function(p){ return p.id !== id; }).concat([x]).sort(byOrdre);
+    render(); setMsg("simMsg", "Simulation enregistrée.", true);
+  }).catch(function(e){ setMsg("simMsg", errMsg(e), false); });
+}
+
+/* ---------- événements ---------- */
+document.addEventListener("click", function(e){
+  var g = e.target.closest("[data-go]");
+  if(g){
+    var target = g.getAttribute("data-go");
+    if(target === "simulations"){ stopTimer(); ui.run = null; ui.mode = "list"; }
+    go(target); return;
+  }
+  var a = e.target.closest("[data-act]"); if(!a) return;
+  var act = a.getAttribute("data-act");
+  if(act==="start") startSim(a.getAttribute("data-id"));
+  else if(act==="unlock") unlockFlow();
+  else if(act==="finish") finish();
+  else if(act==="next" && ui.run){ ui.run.cur = Math.min(ui.run.sim.items.length-1, ui.run.cur+1); render(); window.scrollTo(0,0); }
+  else if(act==="prev" && ui.run){ ui.run.cur = Math.max(0, ui.run.cur-1); render(); window.scrollTo(0,0); }
+  else if(act==="goto" && ui.run){ ui.run.cur = +a.getAttribute("data-i"); render(); window.scrollTo(0,0); }
+  else if(act==="back"){ ui.mode = "list"; ui.last = null; render(); window.scrollTo(0,0); }
+  else if(act==="play" && ui.run){ var it = ui.run.sim.items[+a.getAttribute("data-i")]; ui.run.played[it.a] = true; speak(it.a, a); }
+  else if(act==="logout"){ if(USE_FB){ auth.signOut(); } else { user = null; lsSet("cf_user", ""); render(); } }
+  else if(act==="toggle-paid"){ user.paid = !user.paid; lsSet("cf_user", JSON.stringify(user)); render(); }
+  else if(act==="scroll-offre"){ var o = document.getElementById("offre"); if(o) o.scrollIntoView({behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth"}); }
+  else if(act==="switch-auth"){ authMode = authMode==="signup" ? "login" : "signup"; render(); }
+  else if(act==="reset-pw"){
+    var em = document.getElementById("email").value.trim();
+    if(!em) return setMsg("authMsg", "Écrivez d'abord votre adresse e-mail.", false);
+    auth.sendPasswordResetEmail(em).then(function(){ setMsg("authMsg", "E-mail envoyé. Ouvrez le lien pour choisir un nouveau mot de passe.", true); }).catch(function(er){ setMsg("authMsg", errMsg(er), false); });
+  }
+  else if(act==="resend" && auth.currentUser){
+    auth.currentUser.sendEmailVerification().then(function(){ setMsg("mailMsg", "E-mail envoyé. Pensez à regarder les courriers indésirables.", true); }).catch(function(er){ setMsg("mailMsg", errMsg(er), false); });
+  }
+  else if(act==="checkmail" && auth.currentUser){
+    auth.currentUser.reload().then(function(){
+      user.verified = auth.currentUser.emailVerified;
+      return auth.currentUser.getIdToken(true);
+    }).then(function(){ probeAdmin(); render(); if(!user.verified) setMsg("mailMsg", "L'adresse n'est pas encore vérifiée.", false); }).catch(function(er){ setMsg("mailMsg", errMsg(er), false); });
+  }
+  else if(act==="refresh-users"){ adminUsers = null; adminLoading = false; render(); }
+  else if(act==="toggle-user"){
+    var uid = a.getAttribute("data-uid"), paid = a.getAttribute("data-paid") === "1";
+    a.disabled = true;
+    db.collection("users").doc(uid).update({paid:!paid}).then(function(){
+      (adminUsers||[]).forEach(function(u){ if(u.uid === uid) u.paid = !paid; });
+      adminMsg = ""; render();
+    }).catch(function(er){ adminMsg = errMsg(er); render(); });
+  }
+  else if(act==="del-sim"){
+    var id = a.getAttribute("data-id");
+    if(delConfirm !== id){ delConfirm = id; render(); return; }
+    db.collection("sims").doc(id).delete().then(function(){
+      premium = premium.filter(function(p){ return p.id !== id; }); delConfirm = ""; render();
+    }).catch(function(er){ adminMsg = errMsg(er); render(); });
+  }
+  else if(act==="save-sim") saveSim();
+});
+document.addEventListener("change", function(e){
+  var t = e.target;
+  if(ui.run && t && t.type==="radio"){
+    var idx = +t.name.slice(1);
+    ui.run.ans[idx] = +t.value;
+    var nb = document.querySelector('.qgrid [data-i="'+idx+'"]'); if(nb) nb.classList.add("done");
+  }
+});
+document.addEventListener("input", function(e){
+  if(e.target && e.target.id === "filter"){
+    var q = e.target.value.trim().toLowerCase();
+    document.querySelectorAll("#userRows tr").forEach(function(tr){ tr.hidden = q && tr.getAttribute("data-find").indexOf(q) < 0; });
+  }
+});
+document.addEventListener("submit", function(e){
+  e.preventDefault();
+  var id = e.target.id;
+  if(id === "loginForm"){
+    var p = document.getElementById("prenom").value.trim(), m = document.getElementById("email").value.trim();
+    if(!p || !m) return;
+    user = {prenom:p, email:m, paid:false}; lsSet("cf_user", JSON.stringify(user)); render();
+  }
+  else if(id === "authForm"){
+    var su = authMode === "signup";
+    var email = document.getElementById("email").value.trim(), pw = document.getElementById("mdp").value;
+    var prenom = su ? document.getElementById("prenom").value.trim() : "";
+    if(su && !prenom) return setMsg("authMsg", "Écrivez votre prénom.", false);
+    var btn = document.getElementById("authBtn"); btn.disabled = true; setMsg("authMsg", "Un instant…", true);
+    var fail = function(er){ btn.disabled = false; setMsg("authMsg", errMsg(er), false); };
+    if(su){
+      pendingPrenom = prenom;
+      auth.createUserWithEmailAndPassword(email, pw).then(function(cred){ cred.user.sendEmailVerification().catch(function(){}); }).catch(fail);
+    } else {
+      auth.signInWithEmailAndPassword(email, pw).catch(fail);
+    }
+  }
+});
+window.addEventListener("hashchange", render);
+render();
+</script>
+
+</html>
