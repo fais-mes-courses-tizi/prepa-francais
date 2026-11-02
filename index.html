@@ -176,7 +176,7 @@ var CONFIG = {
   ccp: "" /* numéro de compte CCP à afficher, ou vide pour l'envoyer sur WhatsApp */
 };
 var ADMIN_EMAIL = "hakimberriani6@gmail.com";
-var EPREUVES = {structures:"Structures de la langue", ecrite:"Compréhension écrite", orale:"Compréhension orale"};
+var EPREUVES = {structures:"Structures de la langue", ecrite:"Compréhension écrite", orale:"Compréhension orale", complet:"Test complet"};
 
 var TXT_BIBLIO = "Bibliothèque municipale. Nouveaux horaires à partir du 2 décembre : ouverte du dimanche au jeudi, de 9 h à 17 h. Fermée le vendredi et le samedi. L'inscription est gratuite pour les moins de 18 ans. Les adultes paient 500 DA par an. Pour emprunter un livre, présentez une pièce d'identité.";
 var TXT_MSG = "Salut Karim, je ne pourrai pas venir samedi à ton anniversaire parce que mon train est annulé. Je t'appelle dimanche pour tout te raconter. J'espère que la fête sera belle ! Bises, Samir";
@@ -206,6 +206,7 @@ var FREE = [
     {a:AUD_GARE, q:"Combien de minutes de retard a le train ?", o:["5 minutes","15 minutes","30 minutes","50 minutes"], b:1, e:"« Avec quinze minutes de retard »."}
   ]}
 ];
+FREE = [{id:"t0", epreuve:"complet", titre:"Mini test complet, essai gratuit", gratuit:true, sections:[FREE[2],FREE[0],FREE[1]].map(function(x){ return {epreuve:x.epreuve, duree:(x.epreuve==="orale"?3:x.duree), items:x.items}; })}];
 var DEMO_PREMIUM = [
   {id:"s2", epreuve:"structures", titre:"Structures de la langue, simulation complète n°2", duree:6, gratuit:false, items:[
     {q:"Elle est partie ___ avoir dit au revoir.", o:["sans","pour","avec","dans"], b:0, e:"« Sans » + infinitif exprime l'absence d'une action : sans avoir dit au revoir."},
@@ -352,7 +353,7 @@ function viewAccueil(){
 function simCard(s){
   var locked = !s.gratuit && !hasAccess();
   return '<article class="card"><span class="chip'+(locked?' lock':'')+'">'+(locked?'Accès complet':EPREUVES[s.epreuve])+'</span>'
-    + '<h3>'+esc(s.titre)+'</h3><p class="meta">'+EPREUVES[s.epreuve]+' · '+s.items.length+' questions · '+s.duree+' min</p>'
+    + '<h3>'+esc(s.titre)+'</h3><p class="meta">'+(s.sections ? s.sections.length+' épreuves' : EPREUVES[s.epreuve])+' · '+countQ(s)+' questions · '+totalMin(s)+' min</p>'
     + '<button class="btn sm" type="button" data-act="start" data-id="'+esc(s.id)+'">'+(locked?'Débloquer':'Commencer')+'</button></article>';
 }
 function viewList(){
@@ -366,41 +367,71 @@ function viewList(){
   return html + '</section>';
 }
 
+function secsOf(s){ return s.sections || [{epreuve:s.epreuve, duree:s.duree, items:s.items}]; }
+function countQ(s){ return secsOf(s).reduce(function(n,x){ return n + x.items.length; }, 0); }
+function totalMin(s){ return secsOf(s).reduce(function(n,x){ return n + x.duree; }, 0); }
+function perQ(r){ var sc = r.secs[r.sec]; return Math.max(10, Math.floor(sc.duree*60/sc.items.length)); }
+
 function viewRun(){
-  var r = ui.run, s = r.sim, i = r.cur, it = s.items[i], total = s.items.length, html = "";
-  html += '<div class="runbar"><div><h2>'+esc(s.titre)+'</h2><span class="note">'+EPREUVES[s.epreuve]+'</span></div><div class="timer" id="timer" aria-live="off">'+fmt(r.left)+'</div></div>';
-  html += '<div class="examgrid"><div class="q"><p class="note" style="margin-bottom:10px">Question '+(i+1)+' sur '+total+'</p>';
+  var r = ui.run, sc = r.secs[r.sec], multi = r.secs.length > 1, total = sc.items.length, oral = sc.epreuve === "orale", html = "";
+  var name = EPREUVES[sc.epreuve];
+  if(r.phase === "intro"){
+    html = '<section class="block"><span class="chip">'+(multi ? 'Épreuve '+(r.sec+1)+' sur '+r.secs.length : 'Simulation')+'</span><h2 style="margin:10px 0 4px">'+name+'</h2>'
+      + '<p class="muted" style="margin-bottom:14px">'+total+' questions · '+sc.duree+' minutes</p><ul class="ticks" style="margin-bottom:18px">'
+      + (oral
+        ? '<li>Chaque question a son propre enregistrement, joué une seule fois, automatiquement.</li><li>Vous avez environ '+perQ(r)+' secondes par question, puis la suivante arrive toute seule.</li><li>Vous ne pouvez pas revenir en arrière. Montez le volume et mettez vos écouteurs.</li>'
+        : '<li>Le chronomètre démarre dès que vous touchez « Commencer l\'épreuve ».</li><li>Vous pouvez passer d\'une question à l\'autre avant la fin du temps.</li><li>'+(multi ? 'Une fois l\'épreuve terminée, vous ne pourrez plus y revenir.' : 'La correction s\'affiche à la fin.')+'</li>')
+      + '</ul><button class="btn" type="button" data-act="begin">Commencer l\'épreuve</button></section>';
+    return html;
+  }
+  var st = r.rng[r.sec][0], i = r.cur, it = r.items[i];
+  html += '<div class="runbar"><div><h2>'+name+'</h2><span class="note">'+(multi ? 'Épreuve '+(r.sec+1)+' sur '+r.secs.length+' · ' : '')+'Question '+(i-st+1)+' sur '+total+'</span></div><div class="timer" id="timer" aria-live="off">'+fmt(r.left)+'</div></div>';
+  html += '<div class="examgrid"'+(oral ? ' style="grid-template-columns:minmax(0,1fr)"' : '')+'><div class="q">';
   if(it.t){ html += '<div class="text">'+esc(it.t)+'</div>'; }
   if(it.a){
     var done = r.played[it.a];
-    html += '<div class="audio"><button class="btn sm ghost" type="button" data-act="play" data-i="'+i+'"'+(done?' disabled':'')+'>'+(done?'Écoute terminée':'▶ Écouter (une seule fois)')+'</button></div>';
+    html += '<div class="audio"><button class="btn sm ghost" id="playbtn" type="button" data-act="play" data-i="'+i+'"'+(done?' disabled':'')+'>'+(done?'Écoute terminée':'▶ Écouter (une seule fois)')+'</button>'
+      + (oral ? ' <span class="note">Temps restant pour cette question : <b id="qtimer">'+Math.max(0,r.qleft)+' s</b></span>' : '') + '</div>';
   }
   html += '<p class="stem">'+esc(it.q)+'</p><div class="opts">';
   it.o.forEach(function(opt, j){
     html += '<label class="opt"><input type="radio" name="q'+i+'" value="'+j+'"'+(r.ans[i]===j?' checked':'')+'><span>'+esc(opt)+'</span></label>';
   });
-  html += '</div><div class="row" style="margin-top:16px;justify-content:space-between">'
-    + '<button class="btn ghost sm" type="button" data-act="prev"'+(i===0?' disabled':'')+'>Précédente</button>'
-    + (i < total-1 ? '<button class="btn sm" type="button" data-act="next">Suivante</button>' : '<button class="btn sm" type="button" data-act="finish">Terminer</button>')
-    + '</div></div>';
-  html += '<aside class="qnav"><p class="note">Vos réponses</p><div class="qgrid">';
-  s.items.forEach(function(_, k){
-    html += '<button type="button" data-act="goto" data-i="'+k+'" class="'+(r.ans[k]!==undefined?'done ':'')+(k===i?'cur':'')+'" aria-label="Question '+(k+1)+'">'+(k+1)+'</button>';
-  });
-  html += '</div><button class="btn sm ghost" type="button" data-act="finish">Terminer et corriger</button></aside></div>';
-  return html;
+  html += '</div>';
+  if(!oral){
+    html += '<div class="row" style="margin-top:16px;justify-content:space-between">'
+      + '<button class="btn ghost sm" type="button" data-act="prev"'+(i===st?' disabled':'')+'>Précédente</button>'
+      + (i < r.rng[r.sec][1]-1 ? '<button class="btn sm" type="button" data-act="next">Suivante</button>' : '<button class="btn sm" type="button" data-act="finish">Terminer l\'épreuve</button>')
+      + '</div>';
+  } else {
+    html += '<p class="note" style="margin-top:14px">Choisissez votre réponse. La question suivante arrive automatiquement.</p>';
+  }
+  html += '</div>';
+  if(!oral){
+    html += '<aside class="qnav"><p class="note">Vos réponses</p><div class="qgrid">';
+    for(var k=st; k<r.rng[r.sec][1]; k++){
+      html += '<button type="button" data-act="goto" data-i="'+k+'" class="'+(r.ans[k]!==undefined?'done ':'')+(k===i?'cur':'')+'" aria-label="Question '+(k-st+1)+'">'+(k-st+1)+'</button>';
+    }
+    html += '</div><button class="btn sm ghost" type="button" data-act="finish">'+(multi && r.sec < r.secs.length-1 ? 'Terminer cette épreuve' : 'Terminer et corriger')+'</button></aside>';
+  }
+  return html + '</div>';
 }
 
 function viewResult(){
   var L = ui.last, s = L.sim, html = '';
   html += '<div class="result"><span class="note">'+esc(s.titre)+'</span><div class="big">'+L.bonnes+' / '+L.total+'</div>'
     + '<p>Score estimé : <b>'+L.score+' / 699</b> <span class="lvl">'+L.niveau+'</span></p>'
-    + '<p class="note">Estimation indicative, calculée à partir de votre pourcentage de bonnes réponses.</p>'
-    + '<div class="row" style="margin-top:6px"><button class="btn" type="button" data-act="back">Autres simulations</button><button class="btn ghost" type="button" data-go="resultats">Mes résultats</button></div></div>';
+    + '<p class="note">Estimation indicative, calculée à partir de votre pourcentage de bonnes réponses.</p>';
+  if(L.bySec.length > 1){
+    html += '<div class="tablewrap" style="margin-top:8px"><table><thead><tr><th>Épreuve</th><th>Bonnes réponses</th></tr></thead><tbody>'
+      + L.bySec.map(function(b){ return '<tr><td>'+EPREUVES[b.epreuve]+'</td><td>'+b.bonnes+' / '+b.total+'</td></tr>'; }).join("") + '</tbody></table></div>';
+  }
+  html += '<div class="row" style="margin-top:6px"><button class="btn" type="button" data-act="back">Autres simulations</button><button class="btn ghost" type="button" data-go="resultats">Mes résultats</button></div></div>';
   html += '<h2 style="margin-bottom:14px">Correction</h2>';
-  var prevT = null;
-  s.items.forEach(function(it, i){
+  var prevT = null, prevS = -1;
+  L.items.forEach(function(it, i){
     var mine = L.ans[i];
+    if(L.bySec.length > 1 && it._s !== prevS){ html += '<h3 style="margin:18px 0 10px">'+EPREUVES[L.bySec[it._s].epreuve]+'</h3>'; prevS = it._s; }
     html += '<div class="q">';
     if(it.t && it.t !== prevT){ html += '<div class="text">'+esc(it.t)+'</div>'; }
     if(it.a){ html += '<p class="note" style="margin-bottom:8px">Transcription : '+esc(it.a)+'</p>'; }
@@ -474,7 +505,7 @@ function viewAdmin(){
   }).join("");
   var sims = premium.map(function(s){
     var c = delConfirm === s.id;
-    return '<tr><td>'+esc(s.titre)+'</td><td>'+EPREUVES[s.epreuve]+'</td><td>'+s.items.length+'</td><td><button class="btn sm ghost" type="button" data-act="del-sim" data-id="'+esc(s.id)+'">'+(c?'Confirmer la suppression':'Supprimer')+'</button></td></tr>';
+    return '<tr><td>'+esc(s.titre)+'</td><td>'+EPREUVES[s.epreuve]+'</td><td>'+countQ(s)+'</td><td><button class="btn sm ghost" type="button" data-act="del-sim" data-id="'+esc(s.id)+'">'+(c?'Confirmer la suppression':'Supprimer')+'</button></td></tr>';
   }).join("");
   return '<section class="block"><h2>Élèves</h2>'
     + (adminMsg ? '<p class="msg err">'+esc(adminMsg)+'</p>' : '')
@@ -503,19 +534,27 @@ function render(){
   else html = ui.mode==="run" ? viewRun() : ui.mode==="result" ? viewResult() : viewList();
   v.innerHTML = html;
   document.body.classList.toggle("exam", ui.mode==="run" && r==="simulations");
-  if(ui.mode==="run" && r==="simulations") startTick();
+  if(ui.mode==="run" && r==="simulations" && ui.run && ui.run.phase==="q") startTick();
 }
 
 /* ---------- simulation ---------- */
+var AUDIO = null, SILENT = "data:audio/wav;base64,UklGRiYAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQIAAACAgA==";
+function unlockAudio(){
+  try{ if(!AUDIO) AUDIO = new Audio(); AUDIO.onended = null; AUDIO.onerror = null; AUDIO.src = SILENT; var p = AUDIO.play(); if(p && p.catch) p.catch(function(){}); }catch(e){}
+  try{ if("speechSynthesis" in window){ var u = new SpeechSynthesisUtterance(" "); u.volume = 0; window.speechSynthesis.speak(u); } }catch(e){}
+}
+function stopSound(){ try{ window.speechSynthesis.cancel(); }catch(e){} try{ if(AUDIO){ AUDIO.onended = null; AUDIO.onerror = null; AUDIO.pause(); } }catch(e){} }
 function startTick(){
   stopTimer();
   ui.timer = setInterval(function(){
-    if(!ui.run) return stopTimer();
-    ui.run.left--;
-    var t = document.getElementById("timer");
-    if(t){ t.textContent = fmt(Math.max(0, ui.run.left)); t.classList.toggle("low", ui.run.left <= 60); }
-    if(ui.run.left <= 0){ finish(); }
-  }, 1000);
+    var r = ui.run; if(!r || r.phase !== "q") return stopTimer();
+    var oral = r.secs[r.sec].epreuve === "orale", now = Date.now();
+    r.left = Math.round((r.end - now)/1000);
+    if(oral) r.qleft = Math.round((r.qend - now)/1000);
+    var t = document.getElementById("timer"); if(t){ t.textContent = fmt(Math.max(0, r.left)); t.classList.toggle("low", r.left <= 60); }
+    var q = document.getElementById("qtimer"); if(q){ q.textContent = Math.max(0, r.qleft)+" s"; }
+    if(r.left <= 0){ endSec(); } else if(oral && r.qleft <= 0){ nextOral(); }
+  }, 500);
 }
 function unlockFlow(){
   go(user ? "accueil" : "compte");
@@ -525,15 +564,38 @@ function startSim(id){
   var s = allSims().filter(function(x){return x.id===id;})[0];
   if(!s) return;
   if(!s.gratuit && !hasAccess()){ unlockFlow(); return; }
-  ui.run = {sim:s, left:s.duree*60, ans:{}, played:{}, cur:0};
+  var secs = secsOf(s), flat = [], rng = [];
+  secs.forEach(function(sc, k){ var st = flat.length; sc.items.forEach(function(it){ var c = {}; for(var key in it){ c[key] = it[key]; } c._s = k; flat.push(c); }); rng.push([st, flat.length]); });
+  ui.run = {sim:s, secs:secs, items:flat, rng:rng, sec:0, phase:"intro", left:0, qleft:0, end:0, qend:0, ans:{}, played:{}, cur:0};
   ui.mode = "run"; render(); window.scrollTo(0,0);
+}
+function beginSec(){
+  var r = ui.run; if(!r) return; unlockAudio();
+  var sc = r.secs[r.sec]; r.phase = "q"; r.cur = r.rng[r.sec][0];
+  r.left = sc.duree*60; r.end = Date.now() + r.left*1000;
+  if(sc.epreuve === "orale"){ r.qleft = perQ(r); r.qend = Date.now() + r.qleft*1000; }
+  render(); window.scrollTo(0,0);
+  if(sc.epreuve === "orale") autoPlay();
+}
+function autoPlay(){
+  setTimeout(function(){ var b = document.getElementById("playbtn"), r = ui.run; if(!b || !r || b.disabled || r.phase !== "q") return; speak(r.items[r.cur], b); }, 500);
+}
+function nextOral(){
+  var r = ui.run; if(!r) return; stopSound();
+  if(r.cur + 1 >= r.rng[r.sec][1]){ endSec(); return; }
+  r.cur++; r.qleft = perQ(r); r.qend = Date.now() + r.qleft*1000; render(); autoPlay();
+}
+function endSec(){
+  var r = ui.run; if(!r) return; stopTimer(); stopSound();
+  if(r.sec < r.secs.length - 1){ r.sec++; r.phase = "intro"; render(); window.scrollTo(0,0); } else { finish(); }
 }
 function finish(){
   var r = ui.run; if(!r) return;
-  stopTimer();
-  var bonnes = 0; r.sim.items.forEach(function(it,i){ if(r.ans[i] === it.b) bonnes++; });
-  var total = r.sim.items.length, score = Math.round(bonnes/total*699), niveau = levelOf(score);
-  ui.last = {sim:r.sim, ans:r.ans, bonnes:bonnes, total:total, score:score, niveau:niveau};
+  stopTimer(); stopSound();
+  var bySec = r.secs.map(function(sc, k){ var b = 0; for(var i=r.rng[k][0]; i<r.rng[k][1]; i++){ if(r.ans[i] === r.items[i].b) b++; } return {epreuve:sc.epreuve, bonnes:b, total:sc.items.length}; });
+  var bonnes = bySec.reduce(function(n,x){ return n + x.bonnes; }, 0), total = r.items.length;
+  var score = Math.round(bonnes/total*699), niveau = levelOf(score);
+  ui.last = {sim:r.sim, items:r.items, ans:r.ans, bonnes:bonnes, total:total, score:score, niveau:niveau, bySec:bySec};
   var rec = {date:new Date().toLocaleDateString("fr-FR"), titre:r.sim.titre, bonnes:bonnes, total:total, score:score, niveau:niveau, ts:Date.now()};
   results.push(rec);
   if(USE_FB && user && user.uid){
@@ -554,9 +616,10 @@ function pickVoice(){
 if("speechSynthesis" in window){ try{ window.speechSynthesis.getVoices(); window.speechSynthesis.onvoiceschanged = function(){}; }catch(e){} }
 function speak(it, btn){
   var done = function(){ btn.textContent = "Écoute terminée"; };
+  if(ui.run && it.a){ ui.run.played[it.a] = true; }
   btn.disabled = true; btn.textContent = "Lecture en cours...";
   if(it.f){
-    var au = new Audio(it.f), fell = false;
+    var au = AUDIO || (AUDIO = new Audio()), fell = false; au.src = it.f;
     var fb = function(){ if(fell) return; fell = true; speak({a:it.a}, btn); };
     au.onended = done; au.onerror = fb; au.play().catch(fb); return;
   }
@@ -573,10 +636,8 @@ function speak(it, btn){
 }
 
 /* ---------- administration ---------- */
-function validSim(o){
-  if(!o || typeof o !== "object" || Array.isArray(o)) return "Le texte doit être un objet JSON entre accolades.";
-  if(!EPREUVES[o.epreuve]) return "« epreuve » doit valoir structures, ecrite ou orale.";
-  if(!o.titre || typeof o.titre !== "string") return "« titre » est manquant.";
+function validPart(o){
+  if(!EPREUVES[o.epreuve] || o.epreuve === "complet") return "« epreuve » doit valoir structures, ecrite ou orale.";
   if(!(o.duree > 0)) return "« duree » (en minutes) est manquante.";
   if(!Array.isArray(o.items) || !o.items.length) return "« items » est manquant.";
   for(var i=0;i<o.items.length;i++){
@@ -588,6 +649,16 @@ function validSim(o){
   }
   return "";
 }
+function validSim(o){
+  if(!o || typeof o !== "object" || Array.isArray(o)) return "Le texte doit être un objet JSON entre accolades.";
+  if(!o.titre || typeof o.titre !== "string") return "« titre » est manquant.";
+  if(o.sections !== undefined){
+    if(!Array.isArray(o.sections) || !o.sections.length) return "« sections » est vide.";
+    for(var k=0;k<o.sections.length;k++){ var e = validPart(o.sections[k]); if(e) return "Épreuve "+(k+1)+" : "+e; }
+    return "";
+  }
+  return validPart(o);
+}
 function saveSim(){
   var raw = document.getElementById("simJson").value, o;
   try{ o = JSON.parse(raw); }catch(e){ return setMsg("simMsg", "Ce texte n'est pas du JSON valide. Vérifiez les guillemets et les virgules.", false); }
@@ -596,7 +667,10 @@ function saveSim(){
   for(i=0;i<list.length;i++){
     var bad = validSim(list[i]); if(bad) return setMsg("simMsg", (list.length>1 ? "Simulation "+(i+1)+" : " : "")+bad, false);
     var s = list[i], id = s.id ? slug(s.id) : slug(s.titre);
-    docs.push({id:id, doc:{epreuve:s.epreuve, titre:s.titre, duree:s.duree, ordre:(typeof s.ordre==="number" ? s.ordre : Date.now()+i), items:s.items}});
+    var dd = {titre:s.titre, ordre:(typeof s.ordre==="number" ? s.ordre : Date.now()+i)};
+    if(s.sections){ dd.epreuve = "complet"; dd.sections = s.sections.map(function(x){ return {epreuve:x.epreuve, duree:x.duree, items:x.items}; }); dd.duree = totalMin(dd); }
+    else { dd.epreuve = s.epreuve; dd.duree = s.duree; dd.items = s.items; }
+    docs.push({id:id, doc:dd});
   }
   setMsg("simMsg", "Enregistrement…", true);
   var batch = db.batch();
@@ -619,12 +693,18 @@ document.addEventListener("click", function(e){
   var act = a.getAttribute("data-act");
   if(act==="start") startSim(a.getAttribute("data-id"));
   else if(act==="unlock") unlockFlow();
-  else if(act==="finish") finish();
-  else if(act==="next" && ui.run){ ui.run.cur = Math.min(ui.run.sim.items.length-1, ui.run.cur+1); render(); window.scrollTo(0,0); }
-  else if(act==="prev" && ui.run){ ui.run.cur = Math.max(0, ui.run.cur-1); render(); window.scrollTo(0,0); }
+  else if(act==="begin") beginSec();
+  else if(act==="finish"){
+    var R = ui.run; if(!R) return;
+    var un = 0; for(var q=R.rng[R.sec][0]; q<R.rng[R.sec][1]; q++){ if(R.ans[q] === undefined) un++; }
+    if(un && !window.confirm(un+" question(s) sans réponse. Terminer cette épreuve ? Vous ne pourrez plus y revenir.")) return;
+    endSec();
+  }
+  else if(act==="next" && ui.run){ ui.run.cur = Math.min(ui.run.rng[ui.run.sec][1]-1, ui.run.cur+1); render(); window.scrollTo(0,0); }
+  else if(act==="prev" && ui.run){ ui.run.cur = Math.max(ui.run.rng[ui.run.sec][0], ui.run.cur-1); render(); window.scrollTo(0,0); }
   else if(act==="goto" && ui.run){ ui.run.cur = +a.getAttribute("data-i"); render(); window.scrollTo(0,0); }
   else if(act==="back"){ ui.mode = "list"; ui.last = null; render(); window.scrollTo(0,0); }
-  else if(act==="play" && ui.run){ var it = ui.run.sim.items[+a.getAttribute("data-i")]; ui.run.played[it.a] = true; speak(it, a); }
+  else if(act==="play" && ui.run){ var it = ui.run.items[+a.getAttribute("data-i")]; speak(it, a); }
   else if(act==="logout"){ if(USE_FB){ auth.signOut(); } else { user = null; lsSet("cf_user", ""); render(); } }
   else if(act==="toggle-paid"){ user.paid = !user.paid; lsSet("cf_user", JSON.stringify(user)); render(); }
   else if(act==="scroll-offre"){ var o = document.getElementById("offre"); if(o) o.scrollIntoView({behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth"}); }
