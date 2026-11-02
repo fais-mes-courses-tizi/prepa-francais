@@ -175,6 +175,7 @@ var CONFIG = {
   whatsapp: "213558836811", /* numéro international sans + ni espaces */
   ccp: "" /* numéro de compte CCP à afficher, ou vide pour l'envoyer sur WhatsApp */
 };
+var ADMIN_EMAIL = "hakimberriani6@gmail.com";
 var EPREUVES = {structures:"Structures de la langue", ecrite:"Compréhension écrite", orale:"Compréhension orale"};
 
 var TXT_BIBLIO = "Bibliothèque municipale. Nouveaux horaires à partir du 2 décembre : ouverte du dimanche au jeudi, de 9 h à 17 h. Fermée le vendredi et le samedi. L'inscription est gratuite pour les moins de 18 ans. Les adultes paient 500 DA par an. Pour emprunter un livre, présentez une pièce d'identité.";
@@ -455,7 +456,7 @@ function viewCompte(){
     + '<p class="muted">'+esc(user.email)+'</p>'
     + '<p>Statut : '+(access ? '<span class="status on">Accès complet actif</span>' : '<span class="status off">Accès gratuit</span>')+'</p>'
     + (user.error ? '<p class="msg err">'+esc(user.error)+'</p>' : '')
-    + (USE_FB && !user.verified ? '<p class="note">Adresse e-mail non vérifiée. Ouvrez le lien reçu par e-mail, puis touchez « J\'ai vérifié ».</p><div class="row"><button class="btn ghost sm" type="button" data-act="resend">Renvoyer l\'e-mail</button><button class="btn ghost sm" type="button" data-act="checkmail">J\'ai vérifié</button></div><p class="msg" id="mailMsg" role="status"></p>' : '')
+    + (USE_FB && !user.verified && (user.email||"").toLowerCase() === ADMIN_EMAIL ? '<p class="note">Adresse e-mail non vérifiée. Ouvrez le lien reçu par e-mail, puis touchez « J\'ai vérifié ».</p><div class="row"><button class="btn ghost sm" type="button" data-act="resend">Renvoyer l\'e-mail</button><button class="btn ghost sm" type="button" data-act="checkmail">J\'ai vérifié</button></div><p class="msg" id="mailMsg" role="status"></p>' : '')
     + (access ? '' : '<p>Pour débloquer les simulations complètes, payez '+CONFIG.prix+' par CCP puis envoyez la preuve de paiement.</p>'
         + (wa ? '<a class="btn" href="'+wa+'" target="_blank" rel="noopener">Envoyer la preuve sur WhatsApp</a>' : '<p class="note">Le contact WhatsApp sera affiché ici.</p>'))
     + (isAdmin ? '<div class="row"><button class="btn sm" type="button" data-go="admin">Espace administrateur</button></div>' : '')
@@ -555,8 +556,9 @@ function speak(it, btn){
   var done = function(){ btn.textContent = "Écoute terminée"; };
   btn.disabled = true; btn.textContent = "Lecture en cours...";
   if(it.f){
-    var au = new Audio(it.f); au.onended = done; au.onerror = function(){ btn.textContent = "Audio indisponible"; };
-    au.play().catch(function(){ btn.textContent = "Audio indisponible"; }); return;
+    var au = new Audio(it.f), fell = false;
+    var fb = function(){ if(fell) return; fell = true; speak({a:it.a}, btn); };
+    au.onended = done; au.onerror = fb; au.play().catch(fb); return;
   }
   if(!("speechSynthesis" in window)){ btn.textContent = "Audio non pris en charge par ce navigateur"; return; }
   var ss = window.speechSynthesis;
@@ -690,7 +692,7 @@ document.addEventListener("submit", function(e){
     var fail = function(er){ btn.disabled = false; setMsg("authMsg", errMsg(er), false); };
     if(su){
       pendingPrenom = prenom;
-      auth.createUserWithEmailAndPassword(email, pw).then(function(cred){ cred.user.sendEmailVerification().catch(function(){}); }).catch(fail);
+      auth.createUserWithEmailAndPassword(email, pw).then(function(cred){ if(email.toLowerCase() === ADMIN_EMAIL){ cred.user.sendEmailVerification().catch(function(){}); } }).catch(fail);
     } else {
       auth.signInWithEmailAndPassword(email, pw).catch(fail);
     }
