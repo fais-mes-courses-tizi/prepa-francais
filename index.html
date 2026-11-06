@@ -370,7 +370,17 @@ function viewList(){
 function secsOf(s){ return s.sections || [{epreuve:s.epreuve, duree:s.duree, items:s.items}]; }
 function countQ(s){ return secsOf(s).reduce(function(n,x){ return n + x.items.length; }, 0); }
 function totalMin(s){ return secsOf(s).reduce(function(n,x){ return n + x.duree; }, 0); }
-function perQ(r){ var sc = r.secs[r.sec]; return Math.max(10, Math.floor(sc.duree*60/sc.items.length)); }
+var ANSWER_SEC = 10;
+function estSec(it){ var w = (it.a||"").split(/\s+/).length; return Math.ceil(w/2.2) + 2; }
+function resetQ(r){
+  r.qstart = Date.now(); r.qdone = false;
+  r.qend = r.qstart + (estSec(r.items[r.cur]) + ANSWER_SEC)*1000;
+  r.qleft = Math.round((r.qend - r.qstart)/1000);
+}
+function audioDone(qi){
+  var r = ui.run; if(!r || r.phase !== "q" || r.cur !== qi || r.qdone) return;
+  r.qdone = true; r.qend = Date.now() + ANSWER_SEC*1000;
+}
 
 function viewRun(){
   var r = ui.run, sc = r.secs[r.sec], multi = r.secs.length > 1, total = sc.items.length, oral = sc.epreuve === "orale", html = "";
@@ -379,7 +389,7 @@ function viewRun(){
     html = '<section class="block"><span class="chip">'+(multi ? 'Épreuve '+(r.sec+1)+' sur '+r.secs.length : 'Simulation')+'</span><h2 style="margin:10px 0 4px">'+name+'</h2>'
       + '<p class="muted" style="margin-bottom:14px">'+total+' questions · '+sc.duree+' minutes</p><ul class="ticks" style="margin-bottom:18px">'
       + (oral
-        ? '<li>Chaque question a son propre enregistrement, joué une seule fois, automatiquement.</li><li>Vous avez environ '+perQ(r)+' secondes par question, puis la suivante arrive toute seule.</li><li>Vous ne pouvez pas revenir en arrière. Montez le volume et mettez vos écouteurs.</li>'
+        ? '<li>Chaque question a son propre enregistrement, joué une seule fois, automatiquement.</li><li>Chaque question a son minuteur : la durée de l\'enregistrement plus '+ANSWER_SEC+' secondes pour répondre. Vous pouvez répondre pendant l\'écoute.</li><li>La question suivante arrive toute seule. Vous ne pouvez pas revenir en arrière. Montez le volume et mettez vos écouteurs.</li>'
         : '<li>Le chronomètre démarre dès que vous touchez « Commencer l\'épreuve ».</li><li>Vous pouvez passer d\'une question à l\'autre avant la fin du temps.</li><li>'+(multi ? 'Une fois l\'épreuve terminée, vous ne pourrez plus y revenir.' : 'La correction s\'affiche à la fin.')+'</li>')
       + '</ul><button class="btn" type="button" data-act="begin">Commencer l\'épreuve</button></section>';
     return html;
@@ -391,8 +401,9 @@ function viewRun(){
   if(it.a){
     var done = r.played[it.a];
     html += '<div class="audio"><button class="btn sm ghost" id="playbtn" type="button" data-act="play" data-i="'+i+'"'+(done?' disabled':'')+'>'+(done?'Écoute terminée':'▶ Écouter (une seule fois)')+'</button>'
-      + (oral ? ' <span class="note">Temps restant pour cette question : <b id="qtimer">'+Math.max(0,r.qleft)+' s</b></span>' : '') + '</div>';
+      + '</div>';
   }
+  if(oral){ html += '<p class="note" style="margin-bottom:10px">Temps pour cette question : <b id="qtimer" style="font-size:1.15rem">'+fmt(Math.max(0,r.qleft))+'</b></p>'; }
   html += '<p class="stem">'+esc(it.q)+'</p><div class="opts">';
   it.o.forEach(function(opt, j){
     html += '<label class="opt"><input type="radio" name="q'+i+'" value="'+j+'"'+(r.ans[i]===j?' checked':'')+'><span>'+esc(opt)+'</span></label>';
@@ -404,7 +415,7 @@ function viewRun(){
       + (i < r.rng[r.sec][1]-1 ? '<button class="btn sm" type="button" data-act="next">Suivante</button>' : '<button class="btn sm" type="button" data-act="finish">Terminer l\'épreuve</button>')
       + '</div>';
   } else {
-    html += '<p class="note" style="margin-top:14px">Choisissez votre réponse. La question suivante arrive automatiquement.</p>';
+    html += '<p class="note" style="margin-top:14px">Choisissez votre réponse avant la fin du temps de la question.</p>';
   }
   html += '</div>';
   if(!oral){
@@ -550,11 +561,15 @@ function startTick(){
     var r = ui.run; if(!r || r.phase !== "q") return stopTimer();
     var oral = r.secs[r.sec].epreuve === "orale", now = Date.now();
     r.left = Math.round((r.end - now)/1000);
-    if(oral) r.qleft = Math.round((r.qend - now)/1000);
     var t = document.getElementById("timer"); if(t){ t.textContent = fmt(Math.max(0, r.left)); t.classList.toggle("low", r.left <= 60); }
-    var q = document.getElementById("qtimer"); if(q){ q.textContent = Math.max(0, r.qleft)+" s"; }
-    if(r.left <= 0){ endSec(); } else if(oral && r.qleft <= 0){ nextOral(); }
-  }, 500);
+    if(oral){
+      r.qleft = Math.round((r.qend - now)/1000);
+      var q = document.getElementById("qtimer"); if(q){ q.textContent = fmt(Math.max(0, r.qleft)); q.style.color = r.qleft <= 5 ? "var(--red)" : ""; }
+      if(r.left <= 0){ endSec(); } else if(r.qleft <= 0){ nextOral(); }
+      return;
+    }
+    if(r.left <= 0){ endSec(); }
+  }, 400);
 }
 function unlockFlow(){
   go(user ? "accueil" : "compte");
@@ -573,7 +588,7 @@ function beginSec(){
   var r = ui.run; if(!r) return; unlockAudio();
   var sc = r.secs[r.sec]; r.phase = "q"; r.cur = r.rng[r.sec][0];
   r.left = sc.duree*60; r.end = Date.now() + r.left*1000;
-  if(sc.epreuve === "orale"){ r.qleft = perQ(r); r.qend = Date.now() + r.qleft*1000; }
+  if(sc.epreuve === "orale"){ resetQ(r); }
   render(); window.scrollTo(0,0);
   if(sc.epreuve === "orale") autoPlay();
 }
@@ -583,7 +598,7 @@ function autoPlay(){
 function nextOral(){
   var r = ui.run; if(!r) return; stopSound();
   if(r.cur + 1 >= r.rng[r.sec][1]){ endSec(); return; }
-  r.cur++; r.qleft = perQ(r); r.qend = Date.now() + r.qleft*1000; render(); autoPlay();
+  r.cur++; resetQ(r); render(); autoPlay();
 }
 function endSec(){
   var r = ui.run; if(!r) return; stopTimer(); stopSound();
@@ -615,11 +630,13 @@ function pickVoice(){
 }
 if("speechSynthesis" in window){ try{ window.speechSynthesis.getVoices(); window.speechSynthesis.onvoiceschanged = function(){}; }catch(e){} }
 function speak(it, btn){
-  var done = function(){ btn.textContent = "Écoute terminée"; };
+  var qi = ui.run ? ui.run.cur : -1;
+  var done = function(){ btn.textContent = "Écoute terminée"; audioDone(qi); };
   if(ui.run && it.a){ ui.run.played[it.a] = true; }
   btn.disabled = true; btn.textContent = "Lecture en cours...";
   if(it.f){
     var au = AUDIO || (AUDIO = new Audio()), fell = false; au.src = it.f;
+    au.onloadedmetadata = function(){ if(ui.run && ui.run.cur === qi && !ui.run.qdone && isFinite(au.duration)){ ui.run.qend = ui.run.qstart + (au.duration + 1 + ANSWER_SEC)*1000; } };
     var fb = function(){ if(fell) return; fell = true; speak({a:it.a}, btn); };
     au.onended = done; au.onerror = fb; au.play().catch(fb); return;
   }
